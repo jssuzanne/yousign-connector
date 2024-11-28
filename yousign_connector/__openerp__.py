@@ -4,7 +4,7 @@
 
 {
     'name': 'Yousign Connector',
-    'version': '8.0.2.0.0',
+    'version': '8.0.3.0.0',
     'category': 'Signature',
     'license': 'AGPL-3',
     'summary': 'Odoo generates signature requests on Yousign',
