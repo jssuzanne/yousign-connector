@@ -745,7 +745,7 @@ class YousignRequest(models.Model):
     @api.model
     def cron_update(self):
         # Filter-out the YS requests of the old-API plateform
-        domain_base = [('ys_identifier', '=like', '/procedures/%')]
+        domain_base = [('ys_identifier', '!=', False)]
         requests_to_update = self.search(
             domain_base + [('state', '=', 'sent')])
         requests_to_update.update_status(raise_if_ko=False)
