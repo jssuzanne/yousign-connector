@@ -30,8 +30,6 @@ TIMEOUT = 30
 # Added features:
 # . statut rejet
 # . commentaire en cas de rejet
-# . ordered
-# . mention, mention2
 
 
 class YousignRequest(models.Model):
@@ -507,6 +505,40 @@ class YousignRequest(models.Model):
             201,
             json=json,
         )
+        signer_id = res['id']
+
+        for document_id, num_page in documents:
+            if signer.mention_top:
+                self.yousign_request(
+                    'POST',
+                    '/signature_requests/%s/documents/%s/fields' % (
+                        self.ys_identifier, document_id),
+                    201,
+                    json={
+                        "signer_id": signer_id,
+                        "type": "mention",
+                        "page": num_page,
+                        "x": x,
+                        "y": y - height,
+                        "mention": signer.mention_top,
+                    }
+                )
+            if signer.mention_bottom:
+                self.yousign_request(
+                    'POST',
+                    '/signature_requests/%s/documents/%s/fields' % (
+                        self.ys_identifier, document_id),
+                    201,
+                    json={
+                        "signer_id": signer_id,
+                        "type": "mention",
+                        "page": num_page,
+                        "x": x,
+                        "y": y + height,
+                        "mention": signer.mention_bottom,
+                    }
+                )
+
         signer.write({
             'state': 'pending',
             'ys_identifier': res['id'],
@@ -856,8 +888,8 @@ class YousignRequestSignatory(models.Model):
         ('no_otp', 'No OTP'),  # TODO mig script old value : mail
         ], default='otp_sms', string='Authentication Mode', required=True,
         help='Authentication mode used for the signer')
-    mention_top = fields.Char(string='Top Mention')  # TODO
-    mention_bottom = fields.Char(string='Bottom Mention')  # TODO
+    mention_top = fields.Char(string='Top Mention')
+    mention_bottom = fields.Char(string='Bottom Mention')
     ys_identifier = fields.Char('Yousign ID', readonly=True)
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -865,7 +897,7 @@ class YousignRequestSignatory(models.Model):
         ('signed', 'Signed'),
         ('refused', 'Refused'),
         ], string='Signature Status', readonly=True, default='draft')
-    comment = fields.Text(string='Comment')
+    comment = fields.Text(string='Comment')  # TODO
     signature_date = fields.Date(string='Signature Date', readonly=True)  # no signature date
 
     def create(self, cr, uid, vals, context=None):
