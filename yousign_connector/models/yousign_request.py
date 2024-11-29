@@ -105,8 +105,8 @@ class YousignRequest(models.Model):
     remind_mail_body = fields.Html(
         'Reminder Mail Body',
         readonly=True, states={'draft': [('readonly', False)]})
-    remind_interval = fields.Integer(
-        string='Remind Interval', default=3,
+    remind_interval = fields.Integer(  # TODO selection
+        string='Remind Interval', default=2,
         readonly=True, states={'draft': [('readonly', False)]},
         help="Number of days between 2 auto-reminders by email.")
     remind_limit = fields.Integer(
@@ -830,8 +830,8 @@ class YousignRequestSignatory(models.Model):
         ('no_otp', 'No OTP'),  # TODO mig script old value : mail
         ], default='otp_sms', string='Authentication Mode', required=True,
         help='Authentication mode used for the signer')
-    mention_top = fields.Char(string='Top Mention')
-    mention_bottom = fields.Char(string='Bottom Mention')
+    mention_top = fields.Char(string='Top Mention')  # TODO
+    mention_bottom = fields.Char(string='Bottom Mention')  # TODO
     ys_identifier = fields.Char('Yousign ID', readonly=True)
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -840,7 +840,7 @@ class YousignRequestSignatory(models.Model):
         ('refused', 'Refused'),
         ], string='Signature Status', readonly=True, default='draft')
     comment = fields.Text(string='Comment')
-    signature_date = fields.Date(string='Signature Date', readonly=True)
+    signature_date = fields.Date(string='Signature Date', readonly=True)  # no signature date
 
     def create(self, cr, uid, vals, context=None):
         vals_reformated = self._generic_reformat_phonenumbers(
@@ -875,7 +875,7 @@ class YousignRequestNotification(models.Model):
 
     parent_id = fields.Many2one(
         'yousign.request', string='Request', ondelete='cascade')
-    notif_type = fields.Selection(
+    notif_type = fields.Selection(  # TODO
         '_notif_type_selection', string='Notification Type', required=True)
     creator = fields.Boolean(string='Notify Creator')
     members = fields.Boolean(string='Notify Members')
