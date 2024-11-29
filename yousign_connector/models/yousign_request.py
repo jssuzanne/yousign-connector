@@ -697,15 +697,7 @@ class YousignRequest(models.Model):
                 ostate = ystate2ostate[ystate]
                 sign_state[signer] = ostate
                 signature_date = False
-                if ostate == 'signed':
-                    # TODO: take into account timezone
-                    # shouldn't we convert this field to datetime ?
-                    signature_date = res.get('finishedAt', '')[:10]
-                signer.write({
-                    'state': ostate,
-                    'signature_date': signature_date,
-                    'comment': res.get('comment', False),
-                    })
+                signer.write({'state': ostate})
 
             vals = {'last_update': now}
             if all([x == 'signed' for x in sign_state.values()]):
