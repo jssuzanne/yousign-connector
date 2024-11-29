@@ -390,13 +390,18 @@ class YousignRequest(models.Model):
             raise_if_ko=raise_if_ko,
         )
 
-    def api_delete_signature_requests(self):
+    def api_cancel_signature_requests(self):
         self.check_has_ys_identidifier()
+        json = {
+            "reason": "other",
+            "custom_note": "cancel by %s" % self.env.user.partner_id.name,
+        }
         return self.yousign_request(
-            'DELETE',
-            '/signature_requests/%s' % self.ys_identifier,
-            204,
-            return_raw=True,
+            'POST',
+            '/signature_requests/%s/cancel' % self.ys_identifier,
+            201,
+            json=json,
+            raise_if_ko=True,
         )
 
     def api_activate_signature_requests(self):
@@ -654,7 +659,7 @@ class YousignRequest(models.Model):
     def cancel(self):
         for req in self:
             if req.state == 'sent' and req.ys_identifier:
-                self.api_delete_signature_requests()
+                self.api_cancel_signature_requests()
                 logger.info(
                     'Yousign request %s ID %s successfully cancelled.',
                     req.name, req.id)
@@ -696,7 +701,6 @@ class YousignRequest(models.Model):
                     continue
                 ostate = ystate2ostate[ystate]
                 sign_state[signer] = ostate
-                signature_date = False
                 signer.write({'state': ostate})
 
             vals = {'last_update': now}
