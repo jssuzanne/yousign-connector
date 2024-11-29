@@ -512,6 +512,25 @@ class YousignRequest(models.Model):
             'ys_identifier': res['id'],
         })
 
+    def api_dowload_document(self, document_id, raise_if_ko=True):
+        self.check_has_ys_identidifier()
+        doc_url = '/signature_requests/%s/documents/%s'
+        download_url = doc_url + '/download'
+        document = self.yousign_request(
+            'GET',
+            doc_url % (self.ys_identifier, document_id),
+            200,
+            raise_if_ko=raise_if_ko
+        )
+        download = self.yousign_request(
+            'GET',
+            download_url % (self.ys_identifier, document_id),
+            200,
+            return_raw=True,
+            raise_if_ko=raise_if_ko
+        )
+        return document['filename'], download
+
     @api.multi
     def name_get(self):
         res = []
@@ -751,8 +770,10 @@ class YousignRequest(models.Model):
             if res is None:
                 logger.warning("Skipping Yousign request %s ID %s", req.name, req.id)
                 continue
-            if not res.get('files'):
+
+            if not res.get('documents'):
                 continue
+
             signed_filenames = [
                 att.datas_fname for att in req.signed_attachment_ids]
             if req.res_id and req.model:
@@ -762,45 +783,46 @@ class YousignRequest(models.Model):
                 res_model = self._name
                 res_id = req.id
 
-            for sfile in res['files']:
-                file_id = sfile.get('id')
-                if file_id:
-                    dl = self.yousign_request(
-                        'GET', file_id + '/download', 200, return_raw=True,
-                        raise_if_ko=raise_if_ko)
-                    if dl is None:
-                        logger.warning(
-                            "Skipping Yousign request %s ID %s due to download failure",
-                            req.name, req.id)
+            for document in res['documents']:
+                if document["nature"] != "signable_document":
+                    continue
+
+                document_id = document['id']
+                original_filename, dl = req.api_dowload_document(
+                    document_id, raise_if_ko=raise_if_ko)
+                if dl is None:
+                    logger.warning(
+                        "Skipping Yousign request %s ID %s due to download failure",
+                        req.name, req.id)
+                    continue
+
+                logger.debug("original_filename=%s", original_filename)
+                if original_filename:
+                    if (
+                        original_filename[-4:] and
+                        original_filename[-4:].lower() == '.pdf'
+                    ):
+                        signed_filename = '%s_signed.pdf' % original_filename[:-4]
+                    else:
+                        signed_filename = original_filename
+                    if signed_filename in signed_filenames:
+                        logger.debug(
+                            'File %s is already attached as '
+                            'signed_attachment_ids', signed_filename)
                         continue
-                    original_filename = sfile.get('name')
-                    logger.debug(
-                        "original_filename=%s", original_filename)
-                    if original_filename:
-                        if (
-                                original_filename[-4:] and
-                                original_filename[-4:].lower() == '.pdf'):
-                            signed_filename =\
-                                '%s_signed.pdf' % original_filename[:-4]
-                        else:
-                            signed_filename = original_filename
-                        if signed_filename in signed_filenames:
-                            logger.debug(
-                                'File %s is already attached as '
-                                'signed_attachment_ids', signed_filename)
-                            continue
-                        attach = self.env['ir.attachment'].create({
-                            'name': signed_filename,
-                            'res_id': res_id,
-                            'res_model': res_model,
-                            'datas': dl.content,
-                            'datas_fname': signed_filename,
-                            })
-                        req.signed_attachment_ids = [(4, attach.id)]
-                        signed_filenames.append(signed_filename)
-                        logger.info(
-                            'Signed file %s attached on %s ID %d',
-                            signed_filename, res_model, res_id)
+                    attach = self.env['ir.attachment'].create({
+                        'name': signed_filename,
+                        'res_id': res_id,
+                        'res_model': res_model,
+                        'datas': dl.content.encode('base64'),
+                        'datas_fname': signed_filename,
+                        })
+                    req.signed_attachment_ids = [(4, attach.id)]
+                    signed_filenames.append(signed_filename)
+                    logger.info(
+                        'Signed file %s attached on %s ID %d',
+                        signed_filename, res_model, res_id)
+
             if len(signed_filenames) == docs_to_sign_count:
                 req.state = 'archived'
                 req.message_post(_(
