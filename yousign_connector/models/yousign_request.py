@@ -366,8 +366,8 @@ class YousignRequest(models.Model):
         json = {
             'name': self.name,
             'delivery_mode': 'email',
-            # timezone
-            # 'audit_trail_locale': locale
+            # timezone  TODO
+            "audit_trail_locale": self.lang[:2],
             "ordered_signers": self.ordered,
         }
         if self.remind_auto:
@@ -433,7 +433,7 @@ class YousignRequest(models.Model):
         }
         files = {
             'file': (
-                'plop.pdf',  # TODO fix name
+                filename.encode('latin-1'),
                 pdf_content,
                 'application/pdf'
             )
@@ -474,7 +474,7 @@ class YousignRequest(models.Model):
                 #     self.init_mail_body, 'init', raise_if_not_found=True)
             },
             "info": {
-                "locale": "fr",  # TODO fix local
+                "locale": self.lang[:2],
                 "first_name": signer.firstname and signer.firstname.strip() or '',
                 "last_name": signer.lastname and signer.lastname.strip(),
                 "email": signer.email.strip(),
@@ -508,8 +508,6 @@ class YousignRequest(models.Model):
                     "page": num_page,
                     "x": x,
                     "y": y - height,
-                    "height": height,
-                    "width": width,
                     "mention": signer.mention_top,
                 })
             if signer.mention_bottom:
@@ -519,8 +517,6 @@ class YousignRequest(models.Model):
                     "page": num_page,
                     "x": x,
                     "y": y + height,
-                    "height": height,
-                    "width": width,
                     "mention": signer.mention_bottom,
                 })
 

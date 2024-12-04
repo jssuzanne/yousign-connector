@@ -160,7 +160,7 @@
                 <field name="firstname"/>
                 <field name="lastname" required="1"/>
                 <field name="email" required="1"/>
-                <field name="mobile" widget="phone" attrs="{'required': [('auth_mode', '=', 'sms')]}"/>
+                <field name="mobile" widget="phone" attrs="{'required': [('auth_mode', '=', 'otp_sms')]}"/>
                 <field name="auth_mode"/>
                 <field name="mention_top"/>
                 <field name="mention_bottom"/>
