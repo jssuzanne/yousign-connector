@@ -24,9 +24,6 @@ except ImportError:
 
 TIMEOUT = 30
 
-# ROADMAP:
-# POST /consent_processes + POST /consent_process_values
-
 # Added features:
 # . statut rejet
 # . commentaire en cas de rejet
@@ -52,7 +49,7 @@ class YousignRequest(models.Model):
     init_mail_subject = fields.Char(
         'Init Mail Subject', readonly=True,
         states={'draft': [('readonly', False)]})
-    init_mail_body = fields.Html(
+    init_mail_body = fields.Html(  # TODO to text
         'Init Mail Body', readonly=True,
         states={'draft': [('readonly', False)]})
     lang = fields.Selection(
@@ -100,10 +97,16 @@ class YousignRequest(models.Model):
     remind_mail_subject = fields.Char(
         'Reminder Mail Subject',
         readonly=True, states={'draft': [('readonly', False)]})
-    remind_mail_body = fields.Html(
+    remind_mail_body = fields.Html(  # TODO to text
         'Reminder Mail Body',
         readonly=True, states={'draft': [('readonly', False)]})
-    remind_interval = fields.Integer(  # TODO selection
+    remind_interval = fields.Selection(
+        [
+            (1, '1 day'),
+            (2, '2 days'),
+            (7, '7 days'),
+            (14, '14 days'),
+        ],
         string='Remind Interval', default=2,
         readonly=True, states={'draft': [('readonly', False)]},
         help="Number of days between 2 auto-reminders by email.")
@@ -498,6 +501,28 @@ class YousignRequest(models.Model):
                 "height": height,
                 "width": width,
             })
+            if signer.mention_top:
+                json['fields'].append({
+                    "document_id": document_id,
+                    "type": "mention",
+                    "page": num_page,
+                    "x": x,
+                    "y": y - height,
+                    "height": height,
+                    "width": width,
+                    "mention": signer.mention_top,
+                })
+            if signer.mention_bottom:
+                json['fields'].append({
+                    "document_id": document_id,
+                    "type": "mention",
+                    "page": num_page,
+                    "x": x,
+                    "y": y + height,
+                    "height": height,
+                    "width": width,
+                    "mention": signer.mention_bottom,
+                })
 
         res = self.yousign_request(
             'POST',
@@ -505,40 +530,6 @@ class YousignRequest(models.Model):
             201,
             json=json,
         )
-        signer_id = res['id']
-
-        for document_id, num_page in documents:
-            if signer.mention_top:
-                self.yousign_request(
-                    'POST',
-                    '/signature_requests/%s/documents/%s/fields' % (
-                        self.ys_identifier, document_id),
-                    201,
-                    json={
-                        "signer_id": signer_id,
-                        "type": "mention",
-                        "page": num_page,
-                        "x": x,
-                        "y": y - height,
-                        "mention": signer.mention_top,
-                    }
-                )
-            if signer.mention_bottom:
-                self.yousign_request(
-                    'POST',
-                    '/signature_requests/%s/documents/%s/fields' % (
-                        self.ys_identifier, document_id),
-                    201,
-                    json={
-                        "signer_id": signer_id,
-                        "type": "mention",
-                        "page": num_page,
-                        "x": x,
-                        "y": y + height,
-                        "mention": signer.mention_bottom,
-                    }
-                )
-
         signer.write({
             'state': 'pending',
             'ys_identifier': res['id'],
@@ -884,8 +875,8 @@ class YousignRequestSignatory(models.Model):
     mobile = fields.Char('Mobile')
     auth_mode = fields.Selection([
         ('otp_sms', 'SMS'),
-        ('otp_email', 'E-Mail'),  # TODO mig script old value : mail
-        ('no_otp', 'No OTP'),  # TODO mig script old value : mail
+        ('otp_email', 'E-Mail'),
+        ('no_otp', 'No OTP'),
         ], default='otp_sms', string='Authentication Mode', required=True,
         help='Authentication mode used for the signer')
     mention_top = fields.Char(string='Top Mention')

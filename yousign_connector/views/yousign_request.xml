@@ -50,9 +50,7 @@
                     <page name="remind" string="Auto-Remind Setup" attrs="{'invisible': [('remind_auto', '=', False)]}">
                         <group name="remind">
                             <label for="remind_interval"/>
-                            <div name="remind_interval">
-                                <field name="remind_interval" class="oe_inline" attrs="{'required': [('remind_auto', '=', True)]}"/> days
-                            </div>
+                            <field name="remind_interval" attrs="{'required': [('remind_auto', '=', True)]}"/>
                             <field name="remind_limit" attrs="{'required': [('remind_auto', '=', True)]}"/>
                             <field name="remind_mail_subject" attrs="{'required': [('remind_auto', '=', True)]}"/>
                             <field name="remind_mail_body" attrs="{'required': [('remind_auto', '=', True)]}"/>
@@ -102,9 +100,7 @@
                 <page name="remind" string="Auto-Remind Setup" attrs="{'invisible': [('remind_auto', '=', False)]}">
                     <group name="remind">
                         <label for="remind_interval"/>
-                        <div name="remind_interval">
-                            <field name="remind_interval" class="oe_inline" attrs="{'required': [('remind_auto', '=', True)]}"/> days
-                        </div>
+                        <field name="remind_interval" attrs="{'required': [('remind_auto', '=', True)]}"/>
                         <field name="remind_limit" attrs="{'required': [('remind_auto', '=', True)]}"/>
                         <field name="remind_mail_subject" attrs="{'required': [('remind_auto', '=', True)]}"/>
                         <field name="remind_mail_body" attrs="{'required': [('remind_auto', '=', True)]}"/>
