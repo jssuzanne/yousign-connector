@@ -21,14 +21,14 @@ class YousignRequestTemplate(models.Model):
     ordered = fields.Boolean(string='Sign one after the other')
     init_mail_subject = fields.Char(
         'Init Mail Subject', translate=True)
-    init_mail_body = fields.Html(
+    init_mail_body = fields.Text(
         'Init Mail Body', translate=True,
         help="You must insert '{yousignUrl}' in the body where you want to "
         "insert the URL to access Yousign.")
     remind_auto = fields.Boolean(string='Automatic Reminder')
     remind_mail_subject = fields.Char(
         'Reminder Mail Subject', translate=True)
-    remind_mail_body = fields.Html(
+    remind_mail_body = fields.Text(
         'Reminder Mail Body', translate=True)
     remind_interval = fields.Selection(
         [
@@ -38,7 +38,6 @@ class YousignRequestTemplate(models.Model):
             (14, '14 days'),
         ],
         string='Remind Interval', default=2,
-        readonly=True, states={'draft': [('readonly', False)]},
         help="Number of days between 2 auto-reminders by email.")
     remind_limit = fields.Integer(string='Remind Limit', default=10)
     report_id = fields.Many2one(

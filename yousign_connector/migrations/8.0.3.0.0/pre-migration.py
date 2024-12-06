@@ -8,7 +8,7 @@ def migrate(cr, version):
         WITH request AS (
             SELECT
                id AS id2,
-               SUBSTRING(ys_identifier, 13) AS ys_identifier,
+               SUBSTRING(ys_identifier, 13) AS ys_identifier
             FROM yousign_request
             WHERE ys_identifier != ''
         )
@@ -20,12 +20,12 @@ def migrate(cr, version):
     """)
     cr.execute("""
         UPDATE yousign_request_signatory
-        SET remind_interval=2
-        WHERE remind_interval=3;
+        SET auth_mode = 'otp_' || auth_mode;
     """)
     cr.execute("""
-        UPDATE yousign_request_signatory
-        SET auth_mode = 'otp_' || auth_mode;
+        UPDATE yousign_request
+        SET remind_interval=2
+        WHERE remind_interval=3;
     """)
     cr.execute("""
         UPDATE yousign_request_template_signatory

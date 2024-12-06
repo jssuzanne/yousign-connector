@@ -51,10 +51,7 @@
                 </page>
                 <page name="remind" string="Auto-Remind Setup" attrs="{'invisible': [('remind_auto', '=', False)]}">
                     <group name="remind">
-                        <label for="remind_interval"/>
-                        <div name="remind_interval">
-                            <field name="remind_interval" class="oe_inline"/> days
-                        </div>
+                        <field name="remind_interval"/>
                         <field name="remind_limit"/>
                         <field name="remind_mail_subject"/>
                         <field name="remind_mail_body"/>

@@ -9,7 +9,6 @@ from openerp.exceptions import ValidationError
 from openerp.addons.email_template import email_template
 from unidecode import unidecode
 from StringIO import StringIO
-import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ class YousignRequest(models.Model):
     init_mail_subject = fields.Char(
         'Init Mail Subject', readonly=True,
         states={'draft': [('readonly', False)]})
-    init_mail_body = fields.Html(  # TODO to text
+    init_mail_body = fields.Text(
         'Init Mail Body', readonly=True,
         states={'draft': [('readonly', False)]})
     lang = fields.Selection(
@@ -97,7 +96,7 @@ class YousignRequest(models.Model):
     remind_mail_subject = fields.Char(
         'Reminder Mail Subject',
         readonly=True, states={'draft': [('readonly', False)]})
-    remind_mail_body = fields.Html(  # TODO to text
+    remind_mail_body = fields.Text(
         'Reminder Mail Body',
         readonly=True, states={'draft': [('readonly', False)]})
     remind_interval = fields.Selection(
@@ -274,6 +273,7 @@ class YousignRequest(models.Model):
     @api.model
     def yousign_init(self, has_file=False):
         apikey = tools.config.get('yousign_apikey', False)
+        apikey = "sRkN9CpjVASNmnyNnjYW643DAU0nHe2g"
         environment = tools.config.get('yousign_envir', 'demo')
         if not apikey or not environment:
             raise UserError(_(
@@ -470,8 +470,7 @@ class YousignRequest(models.Model):
         json = {
             "custom_text": {
                 "request_subject": self.init_mail_subject,
-                # "request_body": self.include_url_tag(
-                #     self.init_mail_body, 'init', raise_if_not_found=True)
+                "request_body": self.init_mail_body,
             },
             "info": {
                 "locale": self.lang[:2],
@@ -487,8 +486,8 @@ class YousignRequest(models.Model):
         if self.remind_mail_subject:
             json['custom_text']['reminder_subject'] = self.remind_mail_subject
 
-        # if self.remind_mail_body:
-        #     json['custom_text']['reminder_body'] = self.remind_mail_body
+        if self.remind_mail_body:
+            json['custom_text']['reminder_body'] = self.remind_mail_body
 
         x, y, width, height = self.signature_position(rank)
         for document_id, num_page in documents:
@@ -596,43 +595,6 @@ class YousignRequest(models.Model):
             )
 
         return rank2position.get(signatory_rank, (56, 392, 140, 72))
-
-    @api.model
-    def simple_html2txt(self, html):
-        reg = re.compile('<.*?>')
-        text = re.sub(reg, '', html)
-        return text
-
-    @api.model
-    def include_url_tag(self, mail_body, mail_name, raise_if_not_found=False):
-        if not mail_body:
-            raise UserError(_(
-                "Mail body of %s is empty.") % mail_name)
-        regexp = '{yousignUrl\|.+}'
-        match = re.search(regexp, mail_body, re.IGNORECASE)
-        if not match:
-            if raise_if_not_found:
-                raise UserError(_(
-                    "Missing special tag {yousignUrl|Access to documents} "
-                    "in the mail body of %s. The special tag will be replaced "
-                    "by the button with the label "
-                    "'Access to documents'.") % mail_name)
-            elif 'yousignUrl' in mail_body:
-                raise UserError(_(
-                    "In mail body of %s, it seems you tried to "
-                    "include the yousign URL, but the regular expression "
-                    "didn't match. Please check the special expression "
-                    "for the yousign URL.") % mail_name)
-            else:
-                return mail_body
-        found = match.group(0)
-        button_label = found.split('|')[1][:-1].strip()
-        button_label_txt = self.simple_html2txt(button_label)
-        html_button = '<tag data-tag-type="button" data-tag-name="url" '\
-                      'data-tag-title="%s">%s</tag>' % (button_label_txt,
-                                                        button_label_txt)
-        new_mail_body = re.sub(regexp, html_button, mail_body)
-        return new_mail_body
 
     @api.one
     def send(self):
@@ -920,7 +882,7 @@ class YousignRequestNotification(models.Model):
 
     parent_id = fields.Many2one(
         'yousign.request', string='Request', ondelete='cascade')
-    notif_type = fields.Selection(  # TODO
+    notif_type = fields.Selection(
         '_notif_type_selection', string='Notification Type', required=True)
     creator = fields.Boolean(string='Notify Creator')
     members = fields.Boolean(string='Notify Members')
