@@ -273,7 +273,6 @@ class YousignRequest(models.Model):
     @api.model
     def yousign_init(self, has_file=False):
         apikey = tools.config.get('yousign_apikey', False)
-        apikey = "sRkN9CpjVASNmnyNnjYW643DAU0nHe2g"
         environment = tools.config.get('yousign_envir', 'demo')
         if not apikey or not environment:
             raise UserError(_(
