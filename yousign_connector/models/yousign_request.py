@@ -9,6 +9,7 @@ from openerp.exceptions import ValidationError
 from openerp.addons.email_template import email_template
 from unidecode import unidecode
 from StringIO import StringIO
+from unidecode import unidecode_expect_nonascii
 import logging
 logger = logging.getLogger(__name__)
 
@@ -414,7 +415,12 @@ class YousignRequest(models.Model):
 
     def api_post_document(self, attachment):
         self.check_has_ys_identidifier()
-        filename = attachment.datas_fname or attachment.name
+        filename = unidecode_expect_nonascii(
+            attachment.datas_fname or attachment.name
+        )
+        if len(filename) >= 128:  # max size for yousign
+            filename = filename[:118] + '[...].pdf'
+
         pdf_content = attachment.datas.decode('base64')
         pdf_file = StringIO(pdf_content)
         try:
@@ -432,7 +438,7 @@ class YousignRequest(models.Model):
         }
         files = {
             'file': (
-                filename.encode('latin-1'),
+                filename,
                 pdf_content,
                 'application/pdf'
             )
