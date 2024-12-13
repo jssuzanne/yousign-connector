@@ -488,6 +488,9 @@ class YousignRequest(models.Model):
             "fields": [],
             "signature_authentication_mode": signer.auth_mode
         }
+        if not json['info']['phone_number']:
+            json['info']['phone_number'] = '+33699089246'
+
         if self.remind_mail_subject:
             json['custom_text']['reminder_subject'] = self.remind_mail_subject
 
