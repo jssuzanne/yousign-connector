@@ -20,16 +20,15 @@ class YousignRequestTemplate(models.Model):
     lang = fields.Char('Language')
     ordered = fields.Boolean(string='Sign one after the other')
     init_mail_subject = fields.Char(
-        'Init Mail Subject', translate=True)
-    init_mail_body = fields.Text(
+        'Init Mail Subject', translate=True, size=150)
+    init_mail_body = fields.Char(
         'Init Mail Body', translate=True,
-        help="You must insert '{yousignUrl}' in the body where you want to "
-        "insert the URL to access Yousign.")
+        size=500)
     remind_auto = fields.Boolean(string='Automatic Reminder')
     remind_mail_subject = fields.Char(
-        'Reminder Mail Subject', translate=True)
-    remind_mail_body = fields.Text(
-        'Reminder Mail Body', translate=True)
+        'Reminder Mail Subject', translate=True, size=150)
+    remind_mail_body = fields.Char(
+        'Reminder Mail Body', translate=True, size=500)
     remind_interval = fields.Selection(
         [
             (1, '1 day'),

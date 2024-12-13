@@ -35,7 +35,7 @@ class YousignRequest(models.Model):
     _order = 'id desc'
     _inherit = ['mail.thread']
 
-    name = fields.Char()
+    name = fields.Char(size=128)
     res_name = fields.Char(
         compute='_compute_res_name', string="Related Document Name",
         store=True, readonly=True)
@@ -48,9 +48,11 @@ class YousignRequest(models.Model):
     ordered = fields.Boolean(string='Sign one after the other')
     init_mail_subject = fields.Char(
         'Init Mail Subject', readonly=True,
+        size=150,
         states={'draft': [('readonly', False)]})
-    init_mail_body = fields.Text(
+    init_mail_body = fields.Char(
         'Init Mail Body', readonly=True,
+        size=500,
         states={'draft': [('readonly', False)]})
     lang = fields.Selection(
         '_lang_get', string='Language',
@@ -96,9 +98,11 @@ class YousignRequest(models.Model):
         readonly=True, states={'draft': [('readonly', False)]})
     remind_mail_subject = fields.Char(
         'Reminder Mail Subject',
+        size=150,
         readonly=True, states={'draft': [('readonly', False)]})
-    remind_mail_body = fields.Text(
+    remind_mail_body = fields.Char(
         'Reminder Mail Body',
+        size=500,
         readonly=True, states={'draft': [('readonly', False)]})
     remind_interval = fields.Selection(
         [
@@ -835,8 +839,8 @@ class YousignRequestSignatory(models.Model):
         'yousign.request', string='Request', ondelete='cascade')
     sequence = fields.Integer()
     partner_id = fields.Many2one('res.partner', 'Partner', ondelete='restrict')
-    firstname = fields.Char()
-    lastname = fields.Char()
+    firstname = fields.Char(size=255)
+    lastname = fields.Char(size=255)
     email = fields.Char('E-mail')
     mobile = fields.Char('Mobile')
     auth_mode = fields.Selection([
