@@ -17,7 +17,13 @@
         'base_phone',
         'base_suspend_security',
         ],
-    'external_dependencies': {'python': ['requests', 'unidecode', 'PyPDF2']},
+    'external_dependencies': {
+        'python': [
+            'requests',
+            'unidecode',
+            'PyPDF2',
+        ],
+    },
     'data': [
         'data/yousign_seq.xml',
         'data/cron.xml',

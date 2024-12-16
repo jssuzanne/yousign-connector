@@ -542,6 +542,66 @@ class YousignRequest(models.Model):
             'ys_identifier': res['id'],
         })
 
+    def api_get_signer(self, signer):
+        ystate2ostate = {
+            'initiated': 'draft',
+            'declined': 'refused',
+            "notified": 'pending',
+            'verified': 'verified',
+            'processing': 'processing',
+            'consent_given': 'consent_given',
+            'signed': 'signed',
+            'aborted': 'aborted',
+            'error': 'error',
+        }
+        if signer.state == 'signed':
+            return True
+
+        if not signer.ys_identifier:
+            logger.warning(
+                'Signer ID %s has no YS identifier', signer.id)
+            return False
+
+        res = self.yousign_request(
+            'GET',
+            '/signature_requests/%s/signers/%s' % (
+                self.ys_identifier,
+                signer.ys_identifier,
+            ),
+            200,
+        )
+        if res is None:
+            logger.warning('Skipping YS req %s ID %d', self.name, self.id)
+            return False
+
+        ystate = res.get('status')
+        if ystate not in ystate2ostate:
+            logger.warning(
+                'Bad state value for member ID %d: %s',
+                signer.id, ystate)
+            return False
+
+        ostate = ystate2ostate[ystate]
+        signed = False
+        signature_date = None
+        if ostate == "signed":
+            signed = True
+            res = self.yousign_request(
+                'GET',
+                '/signature_requests/%s/signers/%s/audit_trails' % (
+                    self.ys_identifier,
+                    signer.ys_identifier,
+                ),
+                200,
+            )
+            signature_date = res["signer"]["signature_process_completed_at"]
+
+        signer.write({
+            'state': ostate,
+            'signature_date': signature_date,
+        })
+        return signed
+
     def api_dowload_document(self, document_id, raise_if_ko=True):
         self.check_has_ys_identidifier()
         doc_url = '/signature_requests/%s/documents/%s'
@@ -683,40 +743,16 @@ class YousignRequest(models.Model):
     @api.multi
     def update_status(self, raise_if_ko=True):
         now = fields.Datetime.now()
-        ystate2ostate = {
-            'pending': 'pending',
-            'processing': 'pending',
-            'done': 'signed',
-            'refused': 'refused',
-            }
         for req in self.filtered(lambda x: x.state == 'sent'):
             logger.info(
                 'Start getInfosFromSignatureDemand request on YS req %s ID %d',
                 req.name, req.id)
-            sign_state = {}  # key = member, value = state
+            signed_state = []
             for signer in req.signatory_ids:
-                sign_state[signer] = 'draft'  # initialize
-                if not signer.ys_identifier:
-                    logger.warning(
-                        'Signer ID %s has no YS identifier', signer.id)
-                    continue
-
-                res = self.api_get_signature_requests(raise_if_ko)
-                if res is None:
-                    logger.warning('Skipping YS req %s ID %d', req.name, req.id)
-                    continue
-                ystate = res.get('status')
-                if ystate not in ystate2ostate:
-                    logger.warning(
-                        'Bad state value for member ID %d: %s',
-                        signer.id, ystate)
-                    continue
-                ostate = ystate2ostate[ystate]
-                sign_state[signer] = ostate
-                signer.write({'state': ostate})
+                signed_state.append(self.api_get_signer(signer))
 
             vals = {'last_update': now}
-            if all([x == 'signed' for x in sign_state.values()]):
+            if all(signed_state):
                 vals['state'] = 'signed'
                 logger.info(
                     'Yousign request %s switched to signed state', req.name)
@@ -857,6 +893,11 @@ class YousignRequestSignatory(models.Model):
         ('pending', 'Pending'),
         ('signed', 'Signed'),
         ('refused', 'Refused'),
+        ('verified', 'Verified'),
+        ('processing', 'Processing'),
+        ('consent_given', 'Consent given'),
+        ('aborted', 'Aborted'),
+        ('error', 'Error'),
         ], string='Signature Status', readonly=True, default='draft')
     comment = fields.Text(string='Comment')  # TODO
     signature_date = fields.Date(string='Signature Date', readonly=True)  # no signature date
