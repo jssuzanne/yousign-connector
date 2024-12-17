@@ -749,7 +749,7 @@ class YousignRequest(models.Model):
                 req.name, req.id)
             signed_state = []
             for signer in req.signatory_ids:
-                signed_state.append(self.api_get_signer(signer))
+                signed_state.append(req.api_get_signer(signer))
 
             vals = {'last_update': now}
             if all(signed_state):
