@@ -542,7 +542,7 @@ class YousignRequest(models.Model):
             'ys_identifier': res['id'],
         })
 
-    def api_get_signer(self, signer):
+    def api_get_signer(self, signer, raise_if_ko=True):
         ystate2ostate = {
             'initiated': 'draft',
             'declined': 'refused',
@@ -569,6 +569,7 @@ class YousignRequest(models.Model):
                 signer.ys_identifier,
             ),
             200,
+            raise_if_ko=raise_if_ko,
         )
         if res is None:
             logger.warning('Skipping YS req %s ID %d', self.name, self.id)
@@ -593,6 +594,7 @@ class YousignRequest(models.Model):
                     signer.ys_identifier,
                 ),
                 200,
+                raise_if_ko=raise_if_ko,
             )
             signature_date = res["signer"]["signature_process_completed_at"]
 
@@ -749,7 +751,8 @@ class YousignRequest(models.Model):
                 req.name, req.id)
             signed_state = []
             for signer in req.signatory_ids:
-                signed_state.append(req.api_get_signer(signer))
+                signed_state.append(req.api_get_signer(
+                    signer, raise_if_ko=raise_if_ko))
 
             vals = {'last_update': now}
             if all(signed_state):

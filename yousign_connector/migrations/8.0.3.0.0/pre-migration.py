@@ -19,6 +19,20 @@ def migrate(cr, version):
         WHERE id=r.id2;
     """)
     cr.execute("""
+        WITH request AS (
+            SELECT
+               id AS id2,
+               SUBSTRING(ys_identifier, 10) AS ys_identifier
+            FROM yousign_request_signatory
+            WHERE ys_identifier != ''
+        )
+        UPDATE yousign_request_signatory
+        SET
+            ys_identifier=r.ys_identifier
+        FROM request r
+        WHERE id=r.id2;
+    """)
+    cr.execute("""
         UPDATE yousign_request_signatory
         SET auth_mode = 'otp_' || auth_mode;
     """)
