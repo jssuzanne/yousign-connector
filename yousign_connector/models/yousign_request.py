@@ -798,7 +798,7 @@ class YousignRequest(models.Model):
                     "Skip Yousign request %s ID %s: no documents to sign, "
                     "so nothing to archive", req.name, req.id)
 
-            res = self.api_get_signature_requests(raise_if_ko=raise_if_ko)
+            res = req.api_get_signature_requests(raise_if_ko=raise_if_ko)
             if res is None:
                 logger.warning("Skipping Yousign request %s ID %s", req.name, req.id)
                 continue
