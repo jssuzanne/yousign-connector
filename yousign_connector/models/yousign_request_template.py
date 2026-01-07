@@ -147,6 +147,8 @@ class YousignRequestTemplateSignatory(models.Model):
         ('no_otp', 'No OTP'),
         ], default='otp_sms', string='Authentication Mode', required=True,
         help='Authentication mode used for the signer')
+    pos_x = fields.Integer(string="Position X", help="Si vide utilise la valeur par défault")
+    pos_y = fields.Integer(string="Position Y", help="Si vide utilise la valeur par défault")
     mention_top = fields.Char(string='Top Mention')
     mention_bottom = fields.Char(string='Bottom Mention')
 
@@ -190,6 +192,8 @@ class YousignRequestTemplateSignatory(models.Model):
             'lastname': partner.name,
             'mobile': partner.mobile,
             'auth_mode': self.auth_mode,
+            'pos_x': self.pos_x,
+            'pos_y': self.pos_y,
             'mention_top': self.mention_top,
             'mention_bottom': self.mention_bottom,
         }

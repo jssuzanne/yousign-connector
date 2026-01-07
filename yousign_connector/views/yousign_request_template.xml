@@ -97,6 +97,8 @@
                 <field name="partner_id" attrs="{'invisible': [('partner_type', '=', 'dynamic')]}"/>
                 <field name="partner_tmpl" attrs="{'invisible': [('partner_type', '=', 'static')]}"/>
                 <field name="auth_mode"/>
+                <field name="pos_x"/>
+                <field name="pos_y"/>
                 <field name="mention_top"/>
                 <field name="mention_bottom"/>
             </group>

@@ -162,6 +162,8 @@
                 <field name="email" required="1"/>
                 <field name="mobile" widget="phone" attrs="{'required': [('auth_mode', '=', 'otp_sms')]}"/>
                 <field name="auth_mode"/>
+                <field name="pos_x"/>
+                <field name="pos_y"/>
                 <field name="mention_top"/>
                 <field name="mention_bottom"/>
                 <field name="signature_date"/>

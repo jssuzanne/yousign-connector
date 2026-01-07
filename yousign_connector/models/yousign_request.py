@@ -345,15 +345,15 @@ class YousignRequest(models.Model):
             logger.error(
                 "HTTP %s request on %s returned HTTP Code %s (%s was expected). "
                 "Error message: %s (%s).", method, full_url, res.status_code,
-                expected_status_code, res_json.get('type'),
-                res_json.get('detail', 'no detail'))
+                expected_status_code, res_json.get('type', ''),
+                res_json.get('detail', res_json.get('invalid_params', 'no detail')))
             if raise_if_ko:
                 raise UserError(_(
                     "The HTTP %s request on Yousign webservice %s returned status "
                     "code %d whereas %d was expected. Error message: %s (%s).")
                     % (method, full_url, res.status_code,
                        expected_status_code, res_json.get('title'),
-                        res_json.get('detail', _('no detail'))))
+                        res_json.get('detail', res_json.get('invalid_params', _('no detail')))))
             return None
 
         if return_raw:
@@ -501,7 +501,13 @@ class YousignRequest(models.Model):
         if self.remind_mail_body:
             json['custom_text']['reminder_body'] = self.remind_mail_body
 
-        x, y, width, height = self.signature_position(rank)
+        width = 150
+        height = 50
+        if signer.pos_x and signer.pos_y:
+            x = signer.pos_x
+            y = signer.pos_y
+        else:
+            x, y, width, height = self.signature_position(rank)
         for document_id, num_page in documents:
             json['fields'].append({
                 "document_id": document_id,
@@ -1010,6 +1016,8 @@ class YousignRequestSignatory(models.Model):
         ('no_otp', 'No OTP'),
         ], default='otp_sms', string='Authentication Mode', required=True,
         help='Authentication mode used for the signer')
+    pos_x = fields.Integer(string="Position X", help="Si vide utilise la valeur par défault")
+    pos_y = fields.Integer(string="Position Y", help="Si vide utilise la valeur par défault")
     mention_top = fields.Char(string='Top Mention')
     mention_bottom = fields.Char(string='Bottom Mention')
     ys_identifier = fields.Char('Yousign ID', readonly=True)
