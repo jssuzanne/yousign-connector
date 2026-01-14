@@ -638,6 +638,13 @@ class YousignRequest(models.Model):
             'state': 'signed',
         })
         logger.info("Yousign request %s switched to signed state", self.ys_identifier)
+        src_obj = self.get_source_object_with_chatter()
+        if src_obj:
+            # for v10, add link to request in message
+            src_obj.suspend_security().message_post(_(
+                "Yousign request <b>%s</b> has been signed by all "
+                "signatories") % self.name)
+            self.signed_hook(src_obj)
 
         docs_to_sign_count = len(self.attachment_ids)
         signed_filenames = [
@@ -686,14 +693,6 @@ class YousignRequest(models.Model):
                 signed_filename, res_model, res_id)
 
         if len(signed_filenames) == docs_to_sign_count:
-            src_obj = self.get_source_object_with_chatter()
-            if src_obj:
-                # for v10, add link to request in message
-                src_obj.suspend_security().message_post(_(
-                    "Yousign request <b>%s</b> has been signed by all "
-                    "signatories") % self.name)
-                self.signed_hook(src_obj)
-
             self.state = 'archived'
             self.message_post(_(
                 "%d signed document(s) are now attached. "
@@ -702,6 +701,9 @@ class YousignRequest(models.Model):
             logger.info(
                 "Yousign request %s switched to archived state",
                 self.ys_identifier)
+
+            if src_obj:
+                req.archived_hook(src_obj)
 
         return self.read(['state', 'last_update', 'ys_identifier'])[0]
 
@@ -898,6 +900,12 @@ class YousignRequest(models.Model):
         self.ensure_one()
         return
 
+    @api.multi
+    def archived_hook(self, source_recordset):
+        '''Designed to be inherited by custom modules'''
+        self.ensure_one()
+        return
+
     @api.model
     def cron_update(self):
         # Filter-out the YS requests of the old-API plateform
@@ -989,6 +997,9 @@ class YousignRequest(models.Model):
                     "%d signed document(s) are now attached. "
                     "Request %s is archived")
                     % (len(signed_filenames), req.name))
+                src_obj = req.get_source_object_with_chatter()
+                if src_obj:
+                    req.archived_hook(src_obj)
 
         return
 
