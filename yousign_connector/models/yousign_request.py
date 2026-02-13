@@ -705,10 +705,12 @@ class YousignRequest(models.Model):
             if src_obj:
                 self.archived_hook(src_obj)
 
+        self.send_notification('procedure.finished')
         return self.read(['state', 'last_update', 'ys_identifier'])[0]
 
     @api.multi
     def webhook_signature_request_expired(self, atDate, data):
+        self.send_notification('procedure.expired')
         return self.webhook_signature_request_declined(atDate, data)
 
     @api.multi
@@ -736,6 +738,7 @@ class YousignRequest(models.Model):
         })
         logger.info("Yousign signer %s switched to signed state",
                     self.ys_identifier)
+        self.send_notification('member.finished')
         return signer.read(['state', 'signature_date', 'ys_identifier'])[0]
 
     @api.multi
@@ -751,6 +754,7 @@ class YousignRequest(models.Model):
         })
         logger.info("Yousign signer %s switched to refused state",
                     self.ys_identifier)
+        self.send_notification('procedure.refused')
         return signer.read(['state', 'signature_date', 'ys_identifier'])[0]
 
     @api.multi
@@ -1003,6 +1007,15 @@ class YousignRequest(models.Model):
 
         return
 
+    @api.multi
+    def webhook_signature_request_activated(self, atDate, data):
+        self.send_notification('procedure.started')
+
+    @api.multi
+    def send_notification(self, notif_type):
+        notifs =self.mapped('notification_ids').filtered(lambda x: x.notif_type == notif_type)
+        return notifs.send()
+
 
 class YousignRequestSignatory(models.Model):
     _name = 'yousign.request.signatory'
@@ -1103,7 +1116,6 @@ class YousignRequestNotification(models.Model):
             ('procedure.refused', 'Procedure refused'),
             ('procedure.expired', 'Procedure expired'),
             ('member.finished', 'Member has signed'),
-            ('comment.created', 'Someone commented'),
         ]
 
     @api.constrains('creator', 'members', 'subscribers', 'partner_ids')
@@ -1116,3 +1128,35 @@ class YousignRequestNotification(models.Model):
                     not notif.partner_ids):
                 raise ValidationError(_(
                     "You must select who should be notified."))
+
+    @api.multi
+    def send(self):
+        Mail = self.env['mail.mail']
+        Partner = self.env['res.partner']
+        emails_to = {}
+        for notif in self:
+            partners = notif.partner_ids.ids if notif.partner_ids else []
+            if notif.creator:
+                partners.append(notif.create_uid.partner_id.id)
+            if notif.members:
+                partners.extend(notif.parent_id.signatory_ids.mapped('partner_id').ids)
+            if notif.subscribers:
+                object = notif.parent_id.get_source_object_with_chatter()
+                partners.extend(object.message_follower_ids.ids)
+
+            if not partners:
+                continue
+        
+            partners = Partner.browse(partners).filtered(lambda p: p.email)
+            email_to = ','.join(partners.mapped('email'))
+
+            mail = Mail.create({
+                'subject': notif.subject,
+                'body_html': notif.body,
+                'email_to': email_to,
+                'auto_delete': True,
+            })
+            mail.send()
+            emails_to[notif.id] = email_to
+
+        return emails_to
