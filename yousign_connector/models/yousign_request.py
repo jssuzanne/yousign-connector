@@ -703,7 +703,7 @@ class YousignRequest(models.Model):
                 self.ys_identifier)
 
             if src_obj:
-                req.archived_hook(src_obj)
+                self.archived_hook(src_obj)
 
         return self.read(['state', 'last_update', 'ys_identifier'])[0]
 
