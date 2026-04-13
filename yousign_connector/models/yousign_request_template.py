@@ -61,6 +61,8 @@ class YousignRequestTemplate(models.Model):
     sign_position = fields.Selection(
         [('top', 'Top'), ('bottom', 'Bottom')],
         string='Sign position', default='top')
+    expiration_delay_days = fields.Integer(
+        string="Expiration delay days", required=True, default=180)
 
     _sql_constraints = [
         (
@@ -122,6 +124,7 @@ class YousignRequestTemplate(models.Model):
             'remind_interval': self.remind_interval,
             'remind_limit': self.remind_limit,
             'sign_position': self.sign_position,
+            'expiration_delay_days': self.expiration_delay_days,
             }
         return res
 

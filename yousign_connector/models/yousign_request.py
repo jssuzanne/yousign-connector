@@ -10,6 +10,7 @@ from openerp.addons.email_template import email_template
 from unidecode import unidecode
 from StringIO import StringIO
 from unidecode import unidecode_expect_nonascii
+from datetime import datetime, timedelta
 import logging
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,8 @@ class YousignRequest(models.Model):
     remind_limit = fields.Integer(
         string='Remind Limit', default=10,
         readonly=True, states={'draft': [('readonly', False)]})
+    expiration_delay_days = fields.Integer(
+        string="Expiration delay days", required=True)
 
     _sql_constraints = [
         (
@@ -367,12 +370,15 @@ class YousignRequest(models.Model):
             raise UserError(_('No YS request identifier found'))
 
     def api_post_signature_requests(self):
+        now = datetime.now()
+        expiration = now + timedelta(days=self.expiration_delay_days)
         json = {
             'name': self.name,
             'delivery_mode': 'email',
             # timezone  TODO
             "audit_trail_locale": self.lang and self.lang[:2] or 'fr',
             "ordered_signers": self.ordered,
+            "expiration_date": expiration.isoformat(),
         }
         if self.remind_auto:
             json["reminder_settings"] = {

@@ -44,6 +44,7 @@
                     <group name="init_mail">
                         <field name="init_mail_subject" string="Subject"/>
                         <field name="init_mail_body" string="Body" widget="text"/>
+                        <field name="expiration_delay_days"/>
                     </group>
                 </page>
                 <page name="other_mail" string="E-mail Notifications">
