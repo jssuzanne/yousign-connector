@@ -378,7 +378,7 @@ class YousignRequest(models.Model):
             # timezone  TODO
             "audit_trail_locale": self.lang and self.lang[:2] or 'fr',
             "ordered_signers": self.ordered,
-            "expiration_date": expiration.isoformat(),
+            "expiration_date": expiration.strftime('%Y-%m-%d'),
         }
         if self.remind_auto:
             json["reminder_settings"] = {
