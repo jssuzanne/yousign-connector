@@ -38,6 +38,7 @@ class TestNotificationMail(TransactionCase):
         self.parent = self.env['yousign.request'].create({
             'model': 'res.partner',
             'res_id': self.partner1.id,
+            'expiration_delay_days': 10,
         })
         self.signatory = self.env['yousign.request.signatory'].create({
             'parent_id': self.parent.id,

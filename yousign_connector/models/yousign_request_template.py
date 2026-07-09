@@ -224,6 +224,7 @@ class YousignRequestTemplateNotification(models.Model):
     partner_ids = fields.Many2many(
         'res.partner', string='Partners to Notify',
         domain=[('email', '!=', False)])
+    partner_tmpl = fields.Char(string='Dynamic Partner')
     subject = fields.Char(required=True, translate=True)
     body = fields.Html(required=True, translate=True)
 
@@ -252,12 +253,21 @@ class YousignRequestTemplateNotification(models.Model):
     def prepare_template2request(self, model, res_id):
         self.ensure_one()
         eto = self.env['email.template']
+
+        partner_ids = list(self.partner_ids.ids)
+        if self.partner_tmpl:
+            dynamic_partner_str = eto.render_template_batch(
+                self.partner_tmpl, model, [res_id])[res_id]
+            if dynamic_partner_str:
+                dynamic_partner_id = int(dynamic_partner_str)
+                partner_ids.append(dynamic_partner_id)
+
         vals = {
             'notif_type': self.notif_type,
             'creator': self.creator,
             'members': self.members,
             'subscribers': self.subscribers,
-            'partner_ids': [(6, 0, self.partner_ids.ids)],
+            'partner_ids': [(6, 0, partner_ids)],
             }
         for dyn_field in ['subject', 'body']:
             vals[dyn_field] = eto.render_template_batch(
